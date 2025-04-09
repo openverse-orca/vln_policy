@@ -1,0 +1,12 @@
+datasets/
+scene_datasets/
+versioned_data/
+dummy_policy.pth
+groundingdino_swint_ogc.pth
+mobile_sam.pt
+yolov7-e6e.pt
+traced_model.pt
+outputs/
+tb/
+vis/
+__pycache__/
