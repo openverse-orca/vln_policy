@@ -36,15 +36,9 @@ conda install habitat-sim=0.2.4 headless -c conda-forge -c aihabitat -y
 
 ```
 pip install -e .
-pip install timm==0.6.12
 ```
 
-~~安装Spot API：~~
-
-```
-pip install bosdyn-client bosdyn-api six
-pip install git+https://github.com/naokiyokoyama/bd_spot_wrapper.git
-```
+确保timm==0.6.12
 
 安装 habitat-lab :
 
