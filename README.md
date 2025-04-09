@@ -52,12 +52,6 @@ pip install habitat-baselines==0.2.420230405 habitat-lab==0.2.420230405
 git clone https://github.com/WongKinYiu/yolov7.git
 ```
 
-(选择)克隆Grounding DINO：
-
-```
-git clone https://github.com/IDEA-Research/GroundingDINO.git
-```
-
 模型下载，放入OrcaGym/envs/vln_policy/data目录下：
 
 ```
@@ -82,13 +76,13 @@ wget $HM3D_OBJECTNAV && unzip objectnav_hm3d_v1.zip && mkdir -p $DATA_DIR/datase
 
 ```
 
-File "/home/orca3d/anaconda3/envs/vlfm/lib/python3.9/site-packages/scipy/interpolate/_fitpack_impl.py", line 103, in <module>
+File "/home/<user name>/anaconda3/envs/vln_policy/lib/python3.9/site-packages/scipy/interpolate/_fitpack_impl.py", line 103, in <module>
 'iwrk': array([], dfitpack_int), 'u': array([], float),
 TypeError
 
 ```
 
-可以多卸载几次numpy， 然后再安装numpy, https://github.com/Genesis-Embodied-AI/Genesis/issues/117
+可以多卸载几次numpy， 然后再安装numpy, 参考https://github.com/Genesis-Embodied-AI/Genesis/issues/117
 
 ```
 
