@@ -11,8 +11,6 @@ conda activate vln_policy
 
 切换目录至`~/vln_policy`
 
-pip install --proxy http://127.0.0.1:7897加速
-
 # 安装packages
 
 ```
@@ -26,7 +24,7 @@ pip install git+https://github.com/IDEA-Research/GroundingDINO.git@eeba084341aaa
 conda install habitat-sim=0.2.4 -c conda-forge -c aihabitat -y
 ```
 
-如果没有显示器:
+如果没有显示器：
 
 ```
 conda install habitat-sim=0.2.4 headless -c conda-forge -c aihabitat -y
@@ -52,18 +50,15 @@ pip install habitat-baselines==0.2.420230405 habitat-lab==0.2.420230405
 git clone https://github.com/WongKinYiu/yolov7.git
 ```
 
-模型下载，放入OrcaGym/envs/vln_policy/data目录下：
+模型下载，放入`data/`目录下：
 
 ```
 mobile_sam.pt:  https://github.com/ChaoningZhang/MobileSAM
 groundingdino_swint_ogc.pth：https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
 yolov7-e6e.pt: https://github.com/WongKinYiu/yolov7
 
-
-# 关于数据集下载,ID和SECRET获取地址(通过API获取)： https://my.matterport.com/settings/account/devtools
-MATTERPORT_TOKEN_ID=<YOUR TOKEN ID>
-MATTERPORT_TOKEN_SECRET=<YOUR TOKEN SECRET>
-DATA_DIR=<OrcaGym/envs/vln_policy/data>
+# 导航点模型，habitat policy加载需要
+DATA_DIR=<PATH/TO/YOUR/DATA/FOLDER>
 HM3D_OBJECTNAV=https://dl.fbaipublicfiles.com/habitat/data/datasets/objectnav/hm3d/v1/objectnav_hm3d_v1.zip
 
 wget $HM3D_OBJECTNAV && unzip objectnav_hm3d_v1.zip && mkdir -p $DATA_DIR/datasets/objectnav/hm3d && mv objectnav_hm3d_v1 $DATA_DIR/datasets/objectnav/hm3d/v1 && rm objectnav_hm3d_v1.zip
@@ -76,7 +71,7 @@ wget $HM3D_OBJECTNAV && unzip objectnav_hm3d_v1.zip && mkdir -p $DATA_DIR/datase
 
 ```
 
-File "/home/<user name>/anaconda3/envs/vln_policy/lib/python3.9/site-packages/scipy/interpolate/_fitpack_impl.py", line 103, in <module>
+File "/home/./anaconda3/envs/vln_policy/lib/python3.9/site-packages/scipy/interpolate/_fitpack_impl.py", line 103, in <module>
 'iwrk': array([], dfitpack_int), 'u': array([], float),
 TypeError
 
@@ -98,10 +93,11 @@ ID和SECRET获取地址(通过API获取)：
 `https://my.matterport.com/settings/account/devtools`
 
 ```
+# 关于数据集下载,ID和SECRET获取地址(通过API获取)： https://my.matterport.com/settings/account/devtools
+MATTERPORT_TOKEN_ID=<YOUR TOKEN ID>
+MATTERPORT_TOKEN_SECRET=<YOUR TOKEN SECRET>
 
-MATTERPORT_TOKEN_ID=7dbd513432b07ece
-MATTERPORT_TOKEN_SECRET=c12e721e6e72a62ae8aa44330d9a4e65
-DATA_DIR=/home/<your pc name>/OrcaGym/envs/vln_policy/data
+DATA_DIR=/home/<your pc name>/vln_policy/data
 HM3D_OBJECTNAV=https://dl.fbaipublicfiles.com/habitat/data/datasets/objectnav/hm3d/v1/objectnav_hm3d_v1.zip
 
 ```
