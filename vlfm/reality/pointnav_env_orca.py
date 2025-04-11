@@ -25,8 +25,8 @@ class PointNavOrcaEnv:
     def __init__(
         self,
         # robot: BDSWRobot,
-        max_body_cam_depth: float = 3.5,  # max depth (in meters) for body cameras
-        max_lin_dist: float = 0.25,
+        max_body_cam_depth: float = 4.8,  # max depth (in meters) for body cameras
+        max_lin_dist: float = 0.2,
         max_ang_dist: float = np.deg2rad(30),
         time_step: float = 0.5,
         *args: Any,

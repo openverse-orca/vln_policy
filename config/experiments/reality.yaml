@@ -21,7 +21,7 @@ policy:
     agent_radius: 0.325
 
 env:
-  max_body_cam_depth: 5.0
+  max_body_cam_depth: 7.5
   max_gripper_cam_depth: 10.0
   max_lin_dist: 0.95
   max_ang_dist: 0.523599
