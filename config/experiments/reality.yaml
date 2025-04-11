@@ -26,6 +26,7 @@ env:
   max_lin_dist: 0.95
   max_ang_dist: 0.523599
   time_step: 0.5
+  nav_ip: "192.168.110.135"
   # goal: "office chair"
   goal: "person"
   # goal: "tv"

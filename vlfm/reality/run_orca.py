@@ -45,7 +45,7 @@ def run_policy_orca(cfg: RealityConfig) -> None:
     print("OKOKOKOKOKOKOKOK")
 
 
-    server=RecFromRos2Img(port=15631, ip="192.168.110.135")
+    server=RecFromRos2Img(port=15631, ip=cfg.env.nav_ip)
 
     env = ObjectNavOrcaEnv(
         server=server,
