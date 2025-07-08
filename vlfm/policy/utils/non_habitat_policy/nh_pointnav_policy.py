@@ -103,7 +103,6 @@ class PointNavResNetNet(nn.Module):
 
         if self.no_fwd_dict:
             return out, rnn_hidden_states  # type: ignore
-
         return out, rnn_hidden_states, {}
 
 
@@ -152,6 +151,9 @@ class PointNavResNetPolicy(nn.Module):
         masks: torch.Tensor,
         deterministic: bool = False,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        print("--------------------------------")
+        print(observations)
+        print("--------------------------------")
         features, rnn_hidden_states, _ = self.net(observations, rnn_hidden_states, prev_actions, masks)
         distribution = self.action_distribution(features)
 

@@ -12,7 +12,7 @@ policy:
     depth_image_shape: [212, 240]  # height, width
     pointnav_stop_radius: 0.9
     use_max_confidence: False
-    object_map_erosion_size: 50
+    object_map_erosion_size: 5
     exploration_thresh: 0.0
     obstacle_map_area_threshold: 0.5  # in square meters
     text_prompt: "Seems like there is a target_object ahead."
@@ -26,7 +26,7 @@ env:
   max_lin_dist: 0.95
   max_ang_dist: 0.523599
   time_step: 0.5
-  nav_ip: "192.168.110.135"
+  nav_ip: "192.168.1.178"
   # goal: "office chair"
   goal: "person"
   # goal: "tv"

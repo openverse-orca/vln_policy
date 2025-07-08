@@ -63,7 +63,7 @@ class BaseObjectNavPolicy(BasePolicy):
         **kwargs: Any,
     ) -> None:
         super().__init__()
-        url = "http://192.168.110.135:"+str(15533)+"/rec"
+        url = "http://192.168.1.184:"+str(15533)+"/rec"
         self.url = url
         # 这里导入了这三个模型
         self._object_detector = GroundingDINOClient(port=int(os.environ.get("GROUNDING_DINO_PORT", "12181")))
@@ -113,6 +113,24 @@ class BaseObjectNavPolicy(BasePolicy):
             self._obstacle_map.reset()
         self._did_reset = True
 
+    def _simple_pointnav(self, goal: np.ndarray, stop: bool = False) -> Tensor:
+        robot_xy = self._observations_cache["robot_xy"]
+        heading = self._observations_cache["robot_heading"]
+        rho, theta = rho_theta(robot_xy, heading, goal)
+        print("rho",rho)
+        print("theta",theta)
+        if rho < self._pointnav_stop_radius and stop:
+            self._called_stop = True
+            print("STOP!!!", self._stop_action)
+            return self._stop_action
+
+        if np.abs(theta) < (0.3 if rho > 1.5 else 0.6):
+            return torch.tensor([[1]])
+        if theta > 0:
+            return torch.tensor([[2]])
+        else:
+            return torch.tensor([[3]])
+
     def act(
         self,
         observations: Dict,
@@ -137,15 +155,26 @@ class BaseObjectNavPolicy(BasePolicy):
         robot_xy = self._observations_cache["robot_xy"]
         goal = self._get_target_object_location(robot_xy)
 
-        if not self._done_initializing:  # Initialize
-            mode = "initialize"
-            pointnav_action = self._initialize()
-        elif goal is None:  # Haven't found target object yet
-            mode = "explore"
-            pointnav_action = self._explore(observations)
-        else:
+        self._object_map.reset()
+
+
+        # if not self._done_initializing:  # Initialize
+        #     mode = "initialize"
+        #     pointnav_action = self._initialize()
+        # elif goal is None:  # Haven't found target object yet
+        #     mode = "explore"
+        #     pointnav_action = self._explore(observations)
+        # else:
+        #     mode = "navigate"
+        #     pointnav_action = self._pointnav(goal[:2], stop=True)
+        
+        if goal is not None:
+            print("simple pointnav")
             mode = "navigate"
-            pointnav_action = self._pointnav(goal[:2], stop=True)
+            pointnav_action = self._simple_pointnav(goal[:2], stop=True)
+        else:
+            mode = "initialize"
+            pointnav_action = self._initialize()  
 
         action_numpy = pointnav_action.detach().cpu().numpy()[0]
         if len(action_numpy) == 1:
@@ -302,6 +331,7 @@ class BaseObjectNavPolicy(BasePolicy):
         self._policy_info["rho_theta"] = np.array([rho, theta])
         if rho < self._pointnav_stop_radius and stop:
             self._called_stop = True
+            print("stop", self._stop_action)
             return self._stop_action
         action = self._pointnav_policy.act(obs_pointnav, masks, deterministic=True)
         return action
@@ -344,6 +374,7 @@ class BaseObjectNavPolicy(BasePolicy):
             obs = list(self._observations_cache["object_map_rgbd"][0])
             obs[1] = depth
             self._observations_cache["object_map_rgbd"][0] = tuple(obs)
+
         for idx in range(len(detections.logits)):
             bbox_denorm = detections.boxes[idx] * np.array([width, height, width, height])
             object_mask = self._mobile_sam.segment_bbox(rgb, bbox_denorm.tolist())
@@ -363,6 +394,7 @@ class BaseObjectNavPolicy(BasePolicy):
                     continue
 
             self._object_masks[object_mask > 0] = 1
+
             self._object_map.update_map(
                 self._target_object,
                 depth,

@@ -120,7 +120,8 @@ class RealityMixin:
         self._done_initializing = False
 
     def _initialize(self) -> Tensor:
-        yaw = self._initial_yaws.pop(0)
+        # yaw = self._initial_yaws.pop(0)
+        yaw = 0
         return torch.tensor([[yaw]], dtype=torch.float32)
 
     def _cache_observations(self: Union["RealityMixin", ITMPolicyV2], observations: Dict[str, Any]) -> None:

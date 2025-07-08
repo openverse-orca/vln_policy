@@ -6,6 +6,7 @@
 # (e.g., PATH_TO_PYTHON=`conda activate <env_name> && which python`)
 
 export VLFM_PYTHON=${VLFM_PYTHON:-`which python`}
+echo "VLFM_PYTHON: ${VLFM_PYTHON}"
 export MOBILE_SAM_CHECKPOINT=${MOBILE_SAM_CHECKPOINT:-data/mobile_sam.pt}
 # /home/orca3d/anaconda3/envs/vlfm/lib/python3.9/site-packages/groundingdino/config/GroundingDINO_SwinT_OGC.py
 export GROUNDING_DINO_CONFIG=${GROUNDING_DINO_CONFIG:-GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py}
@@ -31,9 +32,13 @@ tmux split-window -h -t ${session_name}:0.2
 # Run commands in each pane
 # 每条命令后的C-m表示模拟键盘回车执行命令
 # grounding_dino暂时不用
-# tmux send-keys -t ${session_name}:0.0 "${VLFM_PYTHON} -m vlfm.vlm.grounding_dino --port ${GROUNDING_DINO_PORT}" C-m
+# python -m vlfm.vlm.grounding_dino --port 12181
+tmux send-keys -t ${session_name}:0.0 "${VLFM_PYTHON} -m vlfm.vlm.grounding_dino --port ${GROUNDING_DINO_PORT}" C-m
+# python -m vlfm.vlm.blip2itm --port 12182
 tmux send-keys -t ${session_name}:0.1 "${VLFM_PYTHON} -m vlfm.vlm.blip2itm --port ${BLIP2ITM_PORT}" C-m
+# python -m vlfm.vlm.sam --port 12183
 tmux send-keys -t ${session_name}:0.2 "${VLFM_PYTHON} -m vlfm.vlm.sam --port ${SAM_PORT}" C-m
+# python -m vlfm.vlm.yolov7 --port 12184
 tmux send-keys -t ${session_name}:0.3 "${VLFM_PYTHON} -m vlfm.vlm.yolov7 --port ${YOLOV7_PORT}" C-m
 
 # Attach to the tmux session to view the windows

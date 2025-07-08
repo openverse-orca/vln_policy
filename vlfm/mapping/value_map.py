@@ -124,6 +124,7 @@ class ValueMap(BaseMap):
 
         curr_map = self._localize_new_data(depth, tf_camera_to_episodic, min_depth, max_depth, fov)
 
+
         # Fuse the new data with the existing data
         self._fuse_new_data(curr_map, values)
 

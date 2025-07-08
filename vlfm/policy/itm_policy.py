@@ -201,8 +201,7 @@ class BaseITMPolicy(BaseObjectNavPolicy):
             ]
             for rgb in all_rgb
         ]
-        # print(self._target_object)
-        # print(cosines)
+
         for cosine, (rgb, depth, tf, min_depth, max_depth, fov) in zip(
             cosines, self._observations_cache["value_map_rgbd"]
         ):

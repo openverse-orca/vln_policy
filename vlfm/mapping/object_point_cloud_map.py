@@ -48,6 +48,7 @@ class ObjectPointCloudMap:
         # For second-class, bad detections that are too offset or out of range, we
         # assign a random number to the last column of its point cloud that can later
         # be used to identify which points came from the same detection.
+
         if too_offset(object_mask):
             within_range = np.ones_like(local_cloud[:, 0]) * np.random.rand()
         else:
@@ -76,6 +77,8 @@ class ObjectPointCloudMap:
 
     def get_best_object(self, target_class: str, curr_position: np.ndarray) -> np.ndarray:
         target_cloud = self.get_target_cloud(target_class)
+        print(target_cloud)
+        print(target_cloud.shape)
 
         closest_point_2d = self._get_closest_point(target_cloud, curr_position)[:2]
 
@@ -149,13 +152,16 @@ class ObjectPointCloudMap:
         fx: float,
         fy: float,
     ) -> np.ndarray:
+
         final_mask = object_mask * 255
+
         final_mask = cv2.erode(final_mask, None, iterations=self._erosion_size)  # type: ignore
 
         valid_depth = depth.copy()
         valid_depth[valid_depth == 0] = 1  # set all holes (0) to just be far (1)
         valid_depth = valid_depth * (max_depth - min_depth) + min_depth
         cloud = get_point_cloud(valid_depth, final_mask, fx, fy)
+
         cloud = get_random_subarray(cloud, 5000)
         if self.use_dbscan:
             cloud = open3d_dbscan_filtering(cloud)
