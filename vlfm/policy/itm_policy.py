@@ -263,7 +263,7 @@ class ITMPolicyV2(BaseITMPolicy):
         deterministic: bool = False,
     ) -> Any:
         self._pre_step(observations, masks)
-        self._update_value_map()
+        # self._update_value_map()
         return super().act(observations, rnn_hidden_states, prev_actions, masks, deterministic)
 
     def _sort_frontiers_by_value(

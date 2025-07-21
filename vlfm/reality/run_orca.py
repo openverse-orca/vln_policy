@@ -96,7 +96,7 @@ def run_env(env: ObjectNavOrcaEnv, policy: RealityITMPolicyV2, goal: str) -> Non
         observations, _, done, info = env.step(action)
         st = time.time()
         action = policy.get_action(observations, mask, deterministic=True)
-        # print(f"get_action took {time.time() - st:.2f} seconds")
+        print(f"get_action took {time.time() - st:.2f} seconds")
         mask = torch.ones_like(mask)
         if done:
             print("Episode finished because done is True")

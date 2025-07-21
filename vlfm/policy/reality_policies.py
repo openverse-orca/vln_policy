@@ -149,35 +149,35 @@ class RealityMixin:
         #         explore=False,
         #     )
 
-        depth, tf, min_depth, max_depth, fx, fy, topdown_fov = observations["obstacle_map_depths"][-2]
-        self._obstacle_map.update_map(
-            depth,
-            tf,
-            min_depth,
-            max_depth,
-            fx,
-            fy,
-            topdown_fov,
-            explore=False,
-        )
+        # depth, tf, min_depth, max_depth, fx, fy, topdown_fov = observations["obstacle_map_depths"][-2]
+        # self._obstacle_map.update_map(
+        #     depth,
+        #     tf,
+        #     min_depth,
+        #     max_depth,
+        #     fx,
+        #     fy,
+        #     topdown_fov,
+        #     explore=False,
+        # )
 
 
-        _, tf, min_depth, max_depth, fx, fy, topdown_fov = observations["obstacle_map_depths"][-1]
-        # print("position", observations["robot_xy"],"---tf_pos：", tf[:2, 3])
-        self._obstacle_map.update_map(
-            None,
-            tf,
-            min_depth,
-            max_depth,
-            fx,
-            fy,
-            topdown_fov,
-            explore=True,
-            update_obstacles=False,
-        )
+        # _, tf, min_depth, max_depth, fx, fy, topdown_fov = observations["obstacle_map_depths"][-1]
+        # # print("position", observations["robot_xy"],"---tf_pos：", tf[:2, 3])
+        # self._obstacle_map.update_map(
+        #     None,
+        #     tf,
+        #     min_depth,
+        #     max_depth,
+        #     fx,
+        #     fy,
+        #     topdown_fov,
+        #     explore=True,
+        #     update_obstacles=False,
+        # )
 
 
-        self._obstacle_map.update_agent_traj(observations["robot_xy"], observations["robot_heading"])
+        # self._obstacle_map.update_agent_traj(observations["robot_xy"], observations["robot_heading"])
         frontiers = self._obstacle_map.frontiers
 
         height, width = observations["nav_depth"].shape

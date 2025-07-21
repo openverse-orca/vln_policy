@@ -5,6 +5,7 @@ from typing import Dict, Union
 import cv2
 import numpy as np
 import open3d as o3d
+import matplotlib.pyplot as plt
 
 from  vlfm.utils.geometry_utils import (
     extract_yaw,
@@ -62,6 +63,12 @@ class ObjectPointCloudMap:
             within_range[within_range == 0] = np.random.rand()
         global_cloud = transform_points(tf_camera_to_episodic, local_cloud)
         global_cloud = np.concatenate((global_cloud, within_range[:, None]), axis=1)
+        
+        # draw global_cloud in matplotlib and save as png, global cloud is 2d points
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(global_cloud[:, 0], global_cloud[:, 1], s=10)
+        # plt.savefig("global_cloud.png")
 
         curr_position = tf_camera_to_episodic[:3, 3]
         closest_point = self._get_closest_point(global_cloud, curr_position)
@@ -77,8 +84,6 @@ class ObjectPointCloudMap:
 
     def get_best_object(self, target_class: str, curr_position: np.ndarray) -> np.ndarray:
         target_cloud = self.get_target_cloud(target_class)
-        print(target_cloud)
-        print(target_cloud.shape)
 
         closest_point_2d = self._get_closest_point(target_cloud, curr_position)[:2]
 

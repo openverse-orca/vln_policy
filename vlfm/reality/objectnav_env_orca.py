@@ -195,6 +195,8 @@ class ObjectNavOrcaEnv(PointNavOrcaEnv):
 
         nav_depth, obstacle_map_depths, value_map_rgbd, object_map_rgbd = self._get_camera_obs()
         robot_xy, robot_heading = self._get_gps(), self._get_compass()
+        person_pos_xy = self._get_person_pos_xy()
+        print("robotxy", robot_xy)
         # robot_xy = robot_xy*self.scale_xy
         return {
             "nav_depth": nav_depth,
@@ -204,7 +206,10 @@ class ObjectNavOrcaEnv(PointNavOrcaEnv):
             "obstacle_map_depths": obstacle_map_depths,
             "value_map_rgbd": value_map_rgbd,
             "object_map_rgbd": object_map_rgbd,
+            "person_pos_xy": person_pos_xy,
         }
+        
+
 
     def _get_camera_obs(self) -> Tuple[np.ndarray, List, List, List]:
         """
@@ -219,6 +224,7 @@ class ObjectNavOrcaEnv(PointNavOrcaEnv):
         raw_rgb = self.server.get_color()
         raw_depth = self.server.get_float_depth().squeeze()
         self.depth = raw_depth
+
         # cv2.imshow("raw_depth", raw_depth)
         # cv2.waitKey(1)
         cam_data = {}  
@@ -293,7 +299,10 @@ class ObjectNavOrcaEnv(PointNavOrcaEnv):
         tf = cam_data[src]["tf_camera_to_global"]
         max_depth = self._max_gripper_cam_depth
         fx, fy = cam_data[src]["fx"], cam_data[src]["fy"]
-        object_map_rgbd = [(rgb, hand_depth, tf, min_depth, max_depth, fx, fy)]
+        # object_map_rgbd = [(rgb, hand_depth, tf, min_depth, max_depth, fx, fy)]
+        min_depth = 0.5
+        max_depth = 20
+        object_map_rgbd = [(rgb, self.depth, tf, min_depth, max_depth, fx, fy)]
 
         # Nav depth requires the front two camera images, and they must be rotated
         # to be upright
@@ -381,6 +390,25 @@ class ObjectNavOrcaEnv(PointNavOrcaEnv):
         # print(f"_get_gps:{global_xy},{episodic_xy}")
         return episodic_xy
 
+    def _get_person_pos_xy(self):
+        """
+        Get the (x, y) position of the person in the episode frame. x is forward,
+        y is left.
+        """
+        global_xy = self.server.get_person_pos_xy()
+        start_xy = self.tf_episodic_to_global[:2, 3]
+        offset = global_xy - start_xy
+        rotation_matrix = np.array(
+            [
+                [np.cos(-self.episodic_start_yaw), -np.sin(-self.episodic_start_yaw)],
+                [np.sin(-self.episodic_start_yaw), np.cos(-self.episodic_start_yaw)],
+            ]
+        )
+        episodic_xy = rotation_matrix @ offset
+        # print(f"start_xy:{start_xy} | global_xy:{global_xy} | offset:{offset}")
+        # print(f"_get_gps:{global_xy},{episodic_xy}")
+        return episodic_xy
+    
     def _get_compass(self) -> float:
         """
         Get the yaw of the robot's base in the episode frame. Yaw is measured in radians

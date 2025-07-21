@@ -170,7 +170,7 @@ def load_pointnav_policy(file_path: str) -> PointNavResNetTensorOutputPolicy:
             pointnav_policy.net = PointNavResNetNet(discrete_actions=True, no_fwd_dict=True)
             state_dict = torch.load(file_path + ".state_dict", map_location="cpu")
         else:
-            ckpt_dict = torch.load(file_path, map_location="cpu", weights_only=False)
+            ckpt_dict = torch.load(file_path, map_location="cpu")
             pointnav_policy = PointNavResNetTensorOutputPolicy.from_config(ckpt_dict["config"], obs_space, action_space)
             state_dict = ckpt_dict["state_dict"]
         pointnav_policy.load_state_dict(state_dict)

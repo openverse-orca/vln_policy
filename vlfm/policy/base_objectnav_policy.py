@@ -10,6 +10,7 @@ import torch
 import requests, time
 from hydra.core.config_store import ConfigStore
 from torch import Tensor
+import matplotlib.pyplot as plt
 
 from vlfm.mapping.object_point_cloud_map import ObjectPointCloudMap
 from vlfm.mapping.obstacle_map import ObstacleMap
@@ -31,6 +32,15 @@ except Exception:
     class BasePolicy:  # type: ignore
         pass
 
+
+
+def display_grayscale(image, waittime: int=100):
+    image = np.expand_dims(image, axis=-1)
+    img_bgr = np.repeat(image, 3, 2)
+    # print(f"Image data type: {img_bgr.dtype}")
+    # print(img_bgr.size, img_bgr.shape)
+    cv2.imshow("Depth Sensor", img_bgr)
+    return cv2.waitKey(waittime)
 
 class BaseObjectNavPolicy(BasePolicy):
     _target_object: str = ""
@@ -100,6 +110,13 @@ class BaseObjectNavPolicy(BasePolicy):
             )
         # print("BaseObjectNavPolicy init finish--------")
         
+        self.i_error_rho = 0
+        self.i_error_theta = 0
+        self.previous_error_rho = 0
+        self.previous_error_theta = 0
+
+        self.previous_goal = None
+        
 
     def _reset(self) -> None:
         self._target_object = ""
@@ -117,19 +134,68 @@ class BaseObjectNavPolicy(BasePolicy):
         robot_xy = self._observations_cache["robot_xy"]
         heading = self._observations_cache["robot_heading"]
         rho, theta = rho_theta(robot_xy, heading, goal)
-        print("rho",rho)
-        print("theta",theta)
+        # print("rho",rho)
+        # print("theta",theta)
         if rho < self._pointnav_stop_radius and stop:
             self._called_stop = True
             print("STOP!!!", self._stop_action)
             return self._stop_action
 
-        if np.abs(theta) < (0.3 if rho > 1.5 else 0.6):
-            return torch.tensor([[1]])
+        # if np.abs(theta) < (0.3 if rho > 1.5 else 0.6):
+        if np.abs(theta) < (0.03 if rho > 1.5 else 0.06):
+            return "straight", torch.tensor([[1]])
         if theta > 0:
-            return torch.tensor([[2]])
+            return "left", torch.tensor([[theta]])
         else:
-            return torch.tensor([[3]])
+            return "right", torch.tensor([[theta]])
+        
+    def _pid_pointnav(self, goal: np.ndarray, stop: bool = False) -> Tensor:
+        robot_xy = self._observations_cache["robot_xy"]
+        heading = self._observations_cache["robot_heading"]
+        rho, theta = rho_theta(robot_xy, heading, goal)
+
+
+        # # log rho, theta in csv file
+        # with open("rho_theta.csv", "a") as f:
+        #     print("writing")
+        #     f.write(f"{rho},{theta}\n")
+        # print(rho, theta)
+        
+        target_rho = 1
+        target_theta = 0
+        
+        kp_rho = 1
+        ki_rho = 0
+        kd_rho = 0
+        
+        kp_theta = 1.5
+        ki_theta = 0.01
+        kd_theta = 0
+        
+        p_error_rho = rho - target_rho
+        p_error_theta = theta - target_theta
+        
+        self.i_error_rho += p_error_rho
+        self.i_error_theta += p_error_theta
+        
+        d_error_rho = p_error_rho - self.previous_error_rho
+        d_error_theta = p_error_theta - self.previous_error_theta
+        
+        self.previous_error_rho = d_error_rho
+        self.previous_error_theta = d_error_theta
+        
+        signal_rho = kp_rho * p_error_rho + ki_rho * self.i_error_rho + kd_rho * d_error_rho
+        signal_theta = kp_theta * p_error_theta + ki_theta * self.i_error_theta + kd_theta * d_error_theta
+        
+        # print("p_error_rho: ", p_error_rho, "p_error_theta: ", p_error_theta)
+        # print("d_error_rho: ", d_error_rho, "d_error_theta: ", d_error_theta)
+        # print("i_error_rho: ", self.i_error_rho, "i_error_theta: ", self.i_error_theta)
+        # print("signal_rho: ", signal_rho, "signal_theta: ", signal_theta)
+        
+        return "pid", torch.tensor([[signal_rho, signal_theta]])
+        
+        
+             
 
     def act(
         self,
@@ -153,7 +219,45 @@ class BaseObjectNavPolicy(BasePolicy):
             for (rgb, depth, tf, min_depth, max_depth, fx, fy) in object_map_rgbd
         ]
         robot_xy = self._observations_cache["robot_xy"]
-        goal = self._get_target_object_location(robot_xy)
+        goal_perception = self._get_target_object_location(robot_xy)
+        goal_cheating = observations["person_pos_xy"]
+
+        
+        # store in csv
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        if self._object_map.has_object(self._target_object):
+            cloud = self._object_map.get_target_cloud(self._target_object)
+
+            ax.scatter(cloud[:, 0], cloud[:, 1], s=10)
+        if goal_perception is not None:
+            ax.scatter([goal_perception[0]], [goal_perception[1]], c="blue")
+        ax.scatter([goal_cheating[0]], [goal_cheating[1]], c="black")
+        ax.text(goal_cheating[0], goal_cheating[1], 'Cheating', fontsize=8, color='black')
+        ax.scatter([self._observations_cache["robot_xy"][0]], [self._observations_cache["robot_xy"][1]], c="red")
+        ax.text(robot_xy[0], robot_xy[1], 'Robot', fontsize=8, color='red')
+        # Ensure fixed axis ranges
+        # ax.set_xlim(-5, 0)   # Change these limits as you need
+        # ax.set_ylim(-15, 0)
+        plt.savefig(f"pics/global_cloud{int(time.time())}.png")
+
+        # with open("goals.csv", "a") as f:
+        #     if goal_perception is None:
+        #         goal_perception = [0, 0]
+        #     f.write(f"{goal_perception[0]}, {goal_perception[1]}, {goal_cheating[0]},{goal_cheating[1]}\n")
+            
+        
+        if goal_perception is None:
+            if self.previous_goal is None:
+                goal = None
+            else:
+                goal = self.previous_goal
+                # print(robot_xy)
+                # print(self.previous_goal)
+        else:
+            goal = goal_perception
+
+        self.previous_goal = goal
 
         self._object_map.reset()
 
@@ -169,9 +273,8 @@ class BaseObjectNavPolicy(BasePolicy):
         #     pointnav_action = self._pointnav(goal[:2], stop=True)
         
         if goal is not None:
-            print("simple pointnav")
-            mode = "navigate"
-            pointnav_action = self._simple_pointnav(goal[:2], stop=True)
+            # mode, pointnav_action = self._simple_pointnav(goal[:2], stop=True)
+            mode, pointnav_action = self._pid_pointnav(goal[:2], stop=True)
         else:
             mode = "initialize"
             pointnav_action = self._initialize()  
@@ -369,6 +472,11 @@ class BaseObjectNavPolicy(BasePolicy):
         detections = self._get_object_detections(rgb)
         height, width = rgb.shape[:2]
         self._object_masks = np.zeros((height, width), dtype=np.uint8)
+
+        # display_grayscale(depth)
+        max_depth=1
+        min_depth = 0
+    
         if np.array_equal(depth, np.ones_like(depth)) and detections.num_detections > 0:
             depth = self._infer_depth(rgb, min_depth, max_depth)
             obs = list(self._observations_cache["object_map_rgbd"][0])

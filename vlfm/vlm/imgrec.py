@@ -159,6 +159,11 @@ class RecFromRos2Img:
             # 将self.array[6,22]转化为slice
             slice_array = np.array(self.array[6:22])
             return slice_array.reshape(4,4) if slice_array is not None else None
+        
+    def get_person_pos_xy(self):
+        with self.lock:
+            slice_array = np.array(self.array[22:24])
+            return slice_array if slice_array is not None else None
     
 if __name__ == "__main__":
     server = RecFromRos2Img(ip="192.168.110.135")

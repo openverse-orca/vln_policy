@@ -18,7 +18,7 @@ from vlfm.vlm.detections import ObjectDetections
 from .server_wrapper import ServerMixin, host_model, send_request, str_to_image
 
 sys.path.insert(0, "yolov7/")
-# print(sys.path)
+from yolov7.models.experimental import attempt_load
 try:
     from yolov7.models.experimental import attempt_load  # type: ignore # noqa: E402
     from yolov7.utils.datasets import letterbox  # type: ignore # noqa: E402
