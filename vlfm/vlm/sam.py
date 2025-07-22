@@ -62,7 +62,9 @@ class MobileSAMClient:
         self.url = f"http://localhost:{port}/mobile_sam"
 
     def segment_bbox(self, image: np.ndarray, bbox: List[int]) -> np.ndarray:
+        print("sending request to sam")
         response = send_request(self.url, image=image, bbox=bbox)
+        print("sending done")
         cropped_mask_str = response["cropped_mask"]
         cropped_mask = str_to_bool_arr(cropped_mask_str, shape=tuple(image.shape[:2]))
 

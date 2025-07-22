@@ -168,7 +168,7 @@ class BaseObjectNavPolicy(BasePolicy):
         ki_rho = 0
         kd_rho = 0
         
-        kp_theta = 1.5
+        kp_theta = 0.8
         ki_theta = 0.01
         kd_theta = 0
         
@@ -191,6 +191,12 @@ class BaseObjectNavPolicy(BasePolicy):
         # print("d_error_rho: ", d_error_rho, "d_error_theta: ", d_error_theta)
         # print("i_error_rho: ", self.i_error_rho, "i_error_theta: ", self.i_error_theta)
         # print("signal_rho: ", signal_rho, "signal_theta: ", signal_theta)
+
+        if rho < 2.0:
+            signal_rho = 0
+            # signal_theta = 0
+            if rho < 1.0:
+                signal_theta = 0
         
         return "pid", torch.tensor([[signal_rho, signal_theta]])
         
@@ -212,34 +218,36 @@ class BaseObjectNavPolicy(BasePolicy):
         Once the target object is found, it navigates to the object.
         """
         self._pre_step(observations, masks)
-
+        print(".....")
         object_map_rgbd = self._observations_cache["object_map_rgbd"]
+        print("??????")
         detections = [
             self._update_object_map(rgb, depth, tf, min_depth, max_depth, fx, fy)
             for (rgb, depth, tf, min_depth, max_depth, fx, fy) in object_map_rgbd
         ]
+        print("tttt")
         robot_xy = self._observations_cache["robot_xy"]
         goal_perception = self._get_target_object_location(robot_xy)
         goal_cheating = observations["person_pos_xy"]
 
         
-        # store in csv
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        if self._object_map.has_object(self._target_object):
-            cloud = self._object_map.get_target_cloud(self._target_object)
+        # # store in csv
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # if self._object_map.has_object(self._target_object):
+        #     cloud = self._object_map.get_target_cloud(self._target_object)
 
-            ax.scatter(cloud[:, 0], cloud[:, 1], s=10)
-        if goal_perception is not None:
-            ax.scatter([goal_perception[0]], [goal_perception[1]], c="blue")
-        ax.scatter([goal_cheating[0]], [goal_cheating[1]], c="black")
-        ax.text(goal_cheating[0], goal_cheating[1], 'Cheating', fontsize=8, color='black')
-        ax.scatter([self._observations_cache["robot_xy"][0]], [self._observations_cache["robot_xy"][1]], c="red")
-        ax.text(robot_xy[0], robot_xy[1], 'Robot', fontsize=8, color='red')
-        # Ensure fixed axis ranges
-        # ax.set_xlim(-5, 0)   # Change these limits as you need
-        # ax.set_ylim(-15, 0)
-        plt.savefig(f"pics/global_cloud{int(time.time())}.png")
+        #     ax.scatter(cloud[:, 0], cloud[:, 1], s=10)
+        # if goal_perception is not None:
+        #     ax.scatter([goal_perception[0]], [goal_perception[1]], c="blue")
+        # ax.scatter([goal_cheating[0]], [goal_cheating[1]], c="black")
+        # ax.text(goal_cheating[0], goal_cheating[1], 'Cheating', fontsize=8, color='black')
+        # ax.scatter([self._observations_cache["robot_xy"][0]], [self._observations_cache["robot_xy"][1]], c="red")
+        # ax.text(robot_xy[0], robot_xy[1], 'Robot', fontsize=8, color='red')
+        # # Ensure fixed axis ranges
+        # # ax.set_xlim(-5, 0)   # Change these limits as you need
+        # # ax.set_ylim(-15, 0)
+        # plt.savefig(f"pics/global_cloud{int(time.time())}.png")
 
         # with open("goals.csv", "a") as f:
         #     if goal_perception is None:
@@ -254,8 +262,12 @@ class BaseObjectNavPolicy(BasePolicy):
                 goal = self.previous_goal
                 # print(robot_xy)
                 # print(self.previous_goal)
+                lag = int(time.time()) - self.timetag
+                if lag > 5:
+                    goal = None
         else:
             goal = goal_perception
+            self.timetag = int(time.time())
 
         self.previous_goal = goal
 
@@ -381,7 +393,7 @@ class BaseObjectNavPolicy(BasePolicy):
         has_coco = any(c in COCO_CLASSES for c in target_classes) 
 
         has_non_coco = any(c not in COCO_CLASSES for c in target_classes)
-
+        print("predicting")
         detections = (
             self._coco_object_detector.predict(img)
             if has_coco
@@ -390,7 +402,7 @@ class BaseObjectNavPolicy(BasePolicy):
         detections.filter_by_class(target_classes)
         det_conf_threshold = self._coco_threshold if has_coco else self._non_coco_threshold
         detections.filter_by_conf(det_conf_threshold)
-
+        print("predicting")
         if has_coco and has_non_coco and detections.num_detections == 0:
             # Retry with non-coco object detector
             detections = self._object_detector.predict(img, caption=self._non_coco_caption)
@@ -478,6 +490,7 @@ class BaseObjectNavPolicy(BasePolicy):
         min_depth = 0
     
         if np.array_equal(depth, np.ones_like(depth)) and detections.num_detections > 0:
+            print("inferring")
             depth = self._infer_depth(rgb, min_depth, max_depth)
             obs = list(self._observations_cache["object_map_rgbd"][0])
             obs[1] = depth
@@ -485,24 +498,25 @@ class BaseObjectNavPolicy(BasePolicy):
 
         for idx in range(len(detections.logits)):
             bbox_denorm = detections.boxes[idx] * np.array([width, height, width, height])
+            print("segmenting")
             object_mask = self._mobile_sam.segment_bbox(rgb, bbox_denorm.tolist())
 
             # If we are using vqa, then use the BLIP2 model to visually confirm whether
             # the contours are actually correct.
 
-            if self._use_vqa:
-                contours, _ = cv2.findContours(object_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                annotated_rgb = cv2.drawContours(rgb.copy(), contours, -1, (255, 0, 0), 2)
-                question = f"Question: {self._vqa_prompt}"
-                if not detections.phrases[idx].endswith("ing"):
-                    question += "a "
-                question += detections.phrases[idx] + "? Answer:"
-                answer = self._vqa.ask(annotated_rgb, question)
-                if not answer.lower().startswith("yes"):
-                    continue
+            # if self._use_vqa:
+            #     contours, _ = cv2.findContours(object_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            #     annotated_rgb = cv2.drawContours(rgb.copy(), contours, -1, (255, 0, 0), 2)
+            #     question = f"Question: {self._vqa_prompt}"
+            #     if not detections.phrases[idx].endswith("ing"):
+            #         question += "a "
+            #     question += detections.phrases[idx] + "? Answer:"
+            #     answer = self._vqa.ask(annotated_rgb, question)
+            #     if not answer.lower().startswith("yes"):
+            #         continue
 
             self._object_masks[object_mask > 0] = 1
-
+            print("updating")
             self._object_map.update_map(
                 self._target_object,
                 depth,
@@ -513,7 +527,7 @@ class BaseObjectNavPolicy(BasePolicy):
                 fx,
                 fy,
             )
-
+        print("!!!")
         cone_fov = get_fov(fx, depth.shape[1])
         self._object_map.update_explored(tf_camera_to_episodic, max_depth, cone_fov)
 
